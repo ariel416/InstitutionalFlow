@@ -1,0 +1,68 @@
+import pandas as pd
+import re
+
+
+df=pd.read_csv('C:/Users/Ariel/Desktop/OptionALGO/AAPLTimeSales.csv')
+AAPL=df.values.tolist()
+
+def addingCost(AAPL):
+    for i in range(len(AAPL)):
+        quantity=float(re.sub("[^\d\.]", "", AAPL[i][2]))
+        price=float(AAPL[i][3])
+        total=quantity * price
+        cost=total  * 100
+        AAPL[i].append(cost)
+
+addingCost(AAPL)
+largeOrder=[]
+
+def gettingIndividualLargeOrders(AAPL):
+    print()
+    minimumCost=100000.0
+    for i in range(len(AAPL)):
+        if(AAPL[i][9]>minimumCost):
+            largeOrder.append(AAPL[i])
+    for i in range(len(largeOrder)):
+         print(largeOrder[i])
+    print(len(largeOrder), " large orders")
+
+print("AAPL Orders Larger than $100,000")
+gettingIndividualLargeOrders(AAPL)
+print()
+
+midOrder=[]
+def gettingMidOrders(AAPL):
+    print()
+    minimumCost=50000.0
+    for i in range(len(AAPL)):
+        if(AAPL[i][9]>minimumCost and AAPL[i][9]<100000.0):
+            midOrder.append(AAPL[i])
+    for i in range(len(midOrder)):
+        print(midOrder[i])
+    print(len(midOrder), " mid orders")
+
+print("AAPL Orders Larger than $50,000")
+gettingMidOrders(AAPL)
+print()
+
+calls=[]
+puts=[]
+def callOrPut(largeOrder):
+    for i in range(len(largeOrder)):
+        if(largeOrder[i][1].endswith('C')):
+           calls.append(largeOrder[i])
+        else:
+           puts.append(largeOrder[i])
+    for i in range(len(calls)):
+        print(calls[i])
+    for i in range(len(puts)):
+        print(puts[i])
+    print(len(calls), " calls| ", len(puts), " puts")
+
+print("AAPL larger orders calls and puts")
+callOrPut(largeOrder)
+print()
+print("AAPL mid orders calls and puts")
+callOrPut(midOrder)
+
+
