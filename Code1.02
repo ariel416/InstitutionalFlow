@@ -1,0 +1,180 @@
+import pandas as pd
+import re
+import numpy as np
+import csv
+import xlsxwriter
+import matplotlib.pyplot as plt
+import datetime
+import time
+
+df = pd.read_csv('C:/Users/Ariel/Desktop/EverythingDesktop/PycharmProjects/MyPythonStuff/TimeSales.csv')
+ts = df.values.tolist()
+ticker = str(input('Enter the stock ticker:'))
+
+smallOrder = []
+midOrder = []
+largeOrder = []
+calls = []
+puts = []
+LessThanTenPrice = []
+
+
+monthDist = {"JAN": 0, "FEB": 0, "MAR": 0,
+             "APR": 0, "MAY": 0, "JUN": 0,
+             "JUL": 0, "AUG": 0, "SEP": 0,
+             "OCT": 0, "NOV": 0, "DEC": 0}
+
+
+def addingCost(ts):
+    for i in range(len(ts)):
+        if type(ts[i][2]) is str:
+            quantity = float(re.sub("[^\d\.]", "", ts[i][2]))
+        else:
+            quantity = float(ts[i][2])
+        price = float(ts[i][4])
+        total = quantity * price
+        cost = total * 100
+        ts[i].append(cost)
+
+
+def minimumSize(ts):
+    minimumCost = 10000.0
+    for i in range(len(ts)):
+        if (ts[i][9] > minimumCost and ts[i][9] < 50000.0):
+            smallOrder.append(ts[i])
+    print(len(smallOrder), ' small orders')
+    print()
+
+
+def gettingIndividualLargeOrders(ts):
+    print()
+    minimumCost = 100000.0
+    for i in range(len(ts)):
+        if (ts[i][9] > minimumCost):
+            largeOrder.append(ts[i])
+    print(len(largeOrder), " large orders")
+    print()
+
+
+def gettingMidOrders(ts):
+    print()
+    minimumCost = 50000.0
+    for i in range(len(ts)):
+        if minimumCost < ts[i][9] < 100000.0:
+            midOrder.append(ts[i])
+    print(len(midOrder), " mid orders")
+    print()
+
+
+def pricesort(list):
+    for i in range(len(list)):
+        price = float(list[i][3])
+        if price < 10:
+            LessThanTenPrice.append(list[i])
+
+
+
+
+# [day, month, year, strike, callorput]
+
+
+callsweep1={}
+callsweep={}
+putsweep1={}
+putsweep={}
+callsweeplist=[]
+putsweeplist=[]
+AllSweeps=[]
+
+def analysis(list):
+
+    for i in range(len(list)):
+        option = list[i][1]
+        market1= list[i][5].split("x")
+        market2=list[i][5]
+        delta=str(list[i][6])
+        exchange=list[i][3]
+        bid=market1[0]
+        ask=market1[1]
+        price=str(list[i][4])
+        expiration = option.split(" ")
+        if len(expiration) == 5:
+            year = expiration[2]
+            side = expiration[4]
+            if year == '18' and side=='C':
+                    order=option+" "+market2+" "+delta
+                    if order in callsweep1:
+                        callsweep1[order] += 1
+                    else:
+                        callsweep1[order] = 1
+                    if order in putsweep1:
+                        putsweep1[order] += 1
+                    else:
+                        putsweep1[order] = 1
+    for k, v in callsweep1.items():
+        if v >1:
+            callsweep[k] = v
+
+    for k, v in putsweep1.items():
+        if v >1:
+            putsweep[k] = v
+
+    for i in range(len(list)):
+        option = list[i][1]
+        market = list[i][5]
+        delta=str(list[i][6])
+        order = option + " " + market+ " "+delta
+        if order in callsweep:
+            callsweeplist.append(list[i])
+        elif order in putsweep:
+            putsweeplist.append(list[i])
+
+
+def callOrPutDistribution(list):
+    directionDist = {}
+    for order in range(len(list)):
+        expiration = list[order][1].split(" ")
+        if len(expiration)==5:
+            direction = expiration[4]
+            if direction in directionDist:
+                directionDist[direction] += 1
+            else:
+                directionDist[direction] = 1
+
+    plt.bar(directionDist.keys(), directionDist.values(), color='blue')
+    plt.ylabel('Number of Trades')
+    plt.xlabel('C=Call P=Put')
+    plt.title(ticker + ' Call, Put Volume *premium>$10000')
+    plt.show()
+
+
+
+
+def exportSweepHist(list):
+    f=open(ticker+'.txt', 'a')
+    f.write('START --- '+str(datetime.datetime.now())+'\n')
+    for i in range(len(list)):
+        transaction=''
+        for j in range(len(list[i])):
+            transaction+=str(list[i][j])+" "
+        f.write(transaction)
+        f.write('\n')
+    f.write('END')
+    f.write('\n\n')
+    f.close()
+
+
+
+
+
+
+addingCost(ts)
+minimumSize(ts)
+gettingMidOrders(ts)
+gettingIndividualLargeOrders(ts)
+
+AllOrder=smallOrder+midOrder+largeOrder
+analysis(ts)
+callOrPutDistribution(AllOrder)
+exportSweepHist(callsweeplist)
+
